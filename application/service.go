@@ -177,7 +177,7 @@ func (s *AuthService) CreateNote(userID, title, content string) (*model.Note, er
 
 	now := time.Now()
 	note := &model.Note{
-		ID:        fmt.Sprintf("note_%s", time.Now().UnixNano()),
+		ID:        fmt.Sprintf("note_%d", time.Now().UnixNano()),
 		UserID:    userID,
 		Title:     title,
 		Content:   content,
