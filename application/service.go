@@ -139,7 +139,7 @@ func (s *AuthService) Register(req model.RegisterRequest) error {
 	}
 
 	user := &model.User{
-		ID:       fmt.Sprintf("user_%s", time.Now().UnixNano()),
+		ID:       fmt.Sprintf("user_%d", time.Now().UnixNano()),
 		Login:    req.Login,
 		Password: hashedPwd,
 		Name:     req.Name,
