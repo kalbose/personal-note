@@ -46,7 +46,7 @@ func getTokenFromHeader(r *http.Request) string {
 	return parts[1]
 }
 
-func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := getTokenFromHeader(r)
 		if token == "" {
