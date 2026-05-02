@@ -41,6 +41,28 @@ func main() {
 			transport.WriteError(w, http.StatusMethodNotAllowed, "Метод запрещен")
 		}
 	})
+
+	// Корень: иначе GET / даёт 404 (остальные маршруты только под /api/...).
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Личные заметки — API</title></head><body>
+<h1>API работает</h1>
+<p>Это бэкенд без отдельной HTML-страницы. Доступные пути (префикс <code>/api</code>):</p>
+<ul>
+<li><code>POST /api/auth/register</code></li>
+<li><code>POST /api/auth/login</code></li>
+<li><code>POST /api/auth/logout</code></li>
+<li><code>GET /api/notes</code> (заголовок авторизации как в коде)</li>
+<li><code>POST /api/notes/create</code></li>
+<li><code>GET|PUT|DELETE /api/notes/{id}</code></li>
+</ul>
+</body></html>`)
+	})
+
 	//3.0
 	fmt.Println("Сервер запущен http://localhost:8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
