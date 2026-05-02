@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -45,25 +46,25 @@ func getTokenFromHeader(r *http.Request) string {
 	return parts[1]
 }
 
-func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (h *Handler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := getTokenFromHeader(r)
 		if token == "" {
-			writeError(w, http.StatusUnauthorized, "Требуется авторизация")
+			writeError(w, http.StatusUnauthorized, "Авторизация провалена")
 			return
 		}
 		if svc, ok := h.service.(*application.AuthService); ok {
 			userID, err := svc.GetUserIDFromToken(token)
 			if err != nil {
-				writeError(w, http.StatusUnauthorized, "Неверный токен")
+				writeError(w, http.StatusUnauthorized, "Ошибка токенв")
 				return
 			}
-			r.Header.Set("X-User-ID", userID)
+			ctx := context.WithValue(r.Context(), "userID", userID)
+			next(w, r.WithContext(ctx))
 		} else {
-			writeError(w, http.StatusInternalServerError, "Ошибка настройки службы")
+			writeError(w, http.StatusInternalServerError, "Ошибка сервиса")
 			return
 		}
-		next(w, r)
 	}
 }
 
@@ -132,8 +133,8 @@ func (h *Handler) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusMethodNotAllowed, "Метод запрещен")
 		return
 	}
-	userID := r.Header.Get("X-User-ID")
-	if userID == "" {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
 		writeError(w, http.StatusUnauthorized, "Пользователь не авторизован")
 		return
 	}
@@ -161,8 +162,8 @@ func (h *Handler) GetNotesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Header.Get("X-User-ID")
-	if userID == "" {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
 		writeError(w, http.StatusUnauthorized, "Пользователь не авторизован")
 		return
 	}
@@ -187,8 +188,8 @@ func (h *Handler) GetNoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Header.Get("X-User-ID")
-	if userID == "" {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
 		writeError(w, http.StatusUnauthorized, "Пользователь не авторизован")
 		return
 	}
@@ -214,8 +215,8 @@ func (h *Handler) UpdateNoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Header.Get("X-User-ID")
-	if userID == "" {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
 		writeError(w, http.StatusUnauthorized, "Пользователь не авторизован")
 		return
 	}
