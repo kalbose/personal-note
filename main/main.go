@@ -56,7 +56,7 @@ func main() {
 <li><code>POST /api/auth/register</code></li>
 <li><code>POST /api/auth/login</code></li>
 <li><code>POST /api/auth/logout</code></li>
-<li><code>GET /api/notes</code> (заголовок авторизации как в коде)</li>
+<li><code>GET /api/notes</code> — заголовок <code>Authorization: Bearer &lt;токен&gt;</code></li>
 <li><code>POST /api/notes/create</code></li>
 <li><code>GET|PUT|DELETE /api/notes/{id}</code></li>
 </ul>

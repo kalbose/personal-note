@@ -35,15 +35,23 @@ func WriteError(w http.ResponseWriter, status int, message string) {
 }
 
 func getTokenFromHeader(r *http.Request) string {
-	auth := r.Header.Get("Авторизован")
+	auth := r.Header.Get("Authorization")
+	if auth != "" {
+		parts := strings.SplitN(strings.TrimSpace(auth), " ", 2)
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			return strings.TrimSpace(parts[1])
+		}
+	}
+	// Старый вариант (кириллические имена заголовков)
+	auth = r.Header.Get("Авторизован")
 	if auth == "" {
 		return ""
 	}
-	parts := strings.Split(auth, " ")
+	parts := strings.SplitN(strings.TrimSpace(auth), " ", 2)
 	if len(parts) != 2 || parts[0] != "Носитель" {
 		return ""
 	}
-	return parts[1]
+	return strings.TrimSpace(parts[1])
 }
 
 func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -251,8 +259,8 @@ func (h *Handler) DeleteNoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Header.Get("X-User-ID")
-	if userID == "" {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
 		writeError(w, http.StatusUnauthorized, "Пользователь не авторизован")
 		return
 	}
