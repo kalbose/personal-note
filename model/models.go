@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User - структура пользователя
+// User - структура пользователя Пункт 1,5
 type User struct {
 	ID       string `json:"id"`
 	Login    string `json:"login"`
@@ -12,7 +12,7 @@ type User struct {
 	Name     string `json:"name"`
 }
 
-// Note - Заметки
+// Note - Заметки Пункт 2,3
 type Note struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
@@ -22,13 +22,13 @@ type Note struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Login - Данные для входа
+// Login - Данные для входа Пункт 1,1
 type LoginRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
-// Register - Данные для регистрации
+// Register - Данные для регистрации. Пункт 1,4
 type RegisterRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`

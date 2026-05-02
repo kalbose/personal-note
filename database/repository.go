@@ -3,13 +3,14 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"os/user"
-//1.4
+
+	//1.4
 	"personal-notes/model"
 
 	_ "modernc.org/sqlite"
 )
-//Интерфейс для работы с дапнными
+
+// Интерфейс для работы с дапнными
 type Repository interface {
 	CreateUser(user *model.User) error
 	GetUserByLogin(login string) (*model.User, error)
@@ -21,25 +22,28 @@ type Repository interface {
 	UpdateNote(note *model.Note) error
 	DeleteNote(noteID, userID string) error
 }
-//Интерфейс для sqlite
-type SQLiteRepository struct{
+
+// Интерфейс для sqlite
+type SQLiteRepository struct {
 	db *sql.DB
 }
-//3.1
-func NewRepository (dbPath string) (*SQLiteRepository, error) {
+
+// 3.1
+func NewRepository(dbpath string) (*SQLiteRepository, error) {
 	db, err := sql.Open("sqlite", dbpath)
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("Ошибка открытия БД: %w", err)
 	}
 	//1.3
-	err = createTables(db)
+	err = createTablet(db)
 	if err != nil {
 		return nil, fmt.Errorf("Ошибка создания БД: %w", err)
 	}
 
 	return &SQLiteRepository{db: db}, nil
 }
-//Создание таблицы пользователя и заметок
+
+// Создание таблицы пользователя и заметок
 func createTablet(db *sql.DB) error {
 	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS users (
@@ -49,11 +53,11 @@ func createTablet(db *sql.DB) error {
 		name TEXT NOT NULL
 		)
 	`)
-	of err !=nil {
+	if err != nil {
 		return err
 	}
-//2.2
-	_, err = db.Exec (`
+	//2.2
+	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS notes (
 		id TEXT PRIMARY KEY,
 		user_id TEXT NOT NULL,
@@ -67,10 +71,10 @@ func createTablet(db *sql.DB) error {
 	return err
 }
 
-//Пользовательский метод логина
-func (r *SQLiteRepository) CreateUser(user *model.User) error{
+// Пользовательский метод логина
+func (r *SQLiteRepository) CreateUser(user *model.User) error {
 	//1.3
-	_,err := r.db.Exec(
+	_, err := r.db.Exec(
 		"INSERT INTO users(id, login, password, name) VALUES (?, ?, ?, ?)",
 		user.ID, user.Login, user.Password, user.Name,
 	)
@@ -85,11 +89,11 @@ func (r *SQLiteRepository) GetUserByLogin(login string) (*model.User, error) {
 	).Scan(&user.ID, &user.Login, &user.Password, &user.Name)
 	if err == sql.ErrNoRows {
 		return nil, nil
-		}
+	}
 	return user, err
 }
 
-func (r *SQLiteRepository) GetUserByID(id string) (*model.User,error) {
+func (r *SQLiteRepository) GetUserByID(id string) (*model.User, error) {
 	user := &model.User{}
 	err := r.db.QueryRow(
 		"SELECT id, login, password, name FROM users WHERE id = ?",
@@ -97,54 +101,55 @@ func (r *SQLiteRepository) GetUserByID(id string) (*model.User,error) {
 	).Scan(&user.ID, &user.Login, &user.Password, &user.Name)
 	if err == sql.ErrNoRows {
 		return nil, nil
-		}
+	}
 	return user, err
 }
-//Пользовательский метод заметок
+
+// Пользовательский метод заметок
 func (r *SQLiteRepository) CreateNote(note *model.Note) error {
 	_, err := r.db.Exec(`
 	INSERT INTO notes (id, user_id, title, content, created_at, updated_at)
 	VALUES(?, ?, ?, ?, ?, ?)`,
-note.ID, note.UserID, noteTitle, note.Content, note.CreatedAt, note.UpdatedAt,
-)
-return err
+		note.ID, note.UserID, note.Title, note.Content, note.CreatedAt, note.UpdatedAt,
+	)
+	return err
 }
 
 func (r *SQLiteRepository) GetNotesByUserID(userID string, page int) ([]model.Note, error) {
 	//2.4
 	offset := (page - 1) * 25
-	limit:= 25
+	limit := 25
 
-rows, err := r.db.Query(
-	`SELECT id, user_id, title, content, created_at, updated_at
+	rows, err := r.db.Query(
+		`SELECT id, user_id, title, content, created_at, updated_at
 	FROM notes
 	WHERE user_id = ?
 	ORDER BY created_at DESC
-	LIMIR ? OFFSET ?`,
-	userID, limit, offset,
-)
-if err != nil{
-	return nil, err
-}
-defer rows.Close()
-
-var notes []model.Note
-for rows.Next() {
-	var n model.Note
-	err := rows.Scan(&n.ID, &n.UserID, &n.Title, &n.Content, &n.CreatedAt, &n.UpdatedAt)
+	LIMIT ? OFFSET ?`,
+		userID, limit, offset,
+	)
 	if err != nil {
 		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []model.Note
+	for rows.Next() {
+		var n model.Note
+		err := rows.Scan(&n.ID, &n.UserID, &n.Title, &n.Content, &n.CreatedAt, &n.UpdatedAt)
+		if err != nil {
+			return nil, err
 		}
-	notes = append(notes,n)
+		notes = append(notes, n)
 	}
 	return notes, rows.Err()
 }
 
-func (r *SQLiteRepository) GeetNoteByID(noteID, userID string) (*model.Note,error){
-//2.2
+func (r *SQLiteRepository) GetNoteByID(noteID, userID string) (*model.Note, error) {
+	//2.2
 	note := &model.Note{}
 	err := r.db.QueryRow(
-		`SELECT ID, user_id, title, content, created_at, update_at
+		`SELECT id, user_id, title, content, created_at, updated_at
 		FROM notes
 		WHERE id = ? AND user_id = ?`,
 		noteID, userID,
@@ -155,12 +160,12 @@ func (r *SQLiteRepository) GeetNoteByID(noteID, userID string) (*model.Note,erro
 	return note, err
 }
 
-func (r *SQLiteRepository) UpdateNote (note *model.Note) error {
-	_,err := r.db.Exec(
+func (r *SQLiteRepository) UpdateNote(note *model.Note) error {
+	_, err := r.db.Exec(
 		`UPDATE notes
 		SET title = ?, content = ?, updated_at = ?
 		WHERE id = ? AND user_id = ?`,
-		note.Title, note.Content, note.UpdatedAt, note.ID, nore.UserID,
+		note.Title, note.Content, note.UpdatedAt, note.ID, note.UserID,
 	)
 	return err
 }
@@ -168,7 +173,7 @@ func (r *SQLiteRepository) UpdateNote (note *model.Note) error {
 func (r *SQLiteRepository) DeleteNote(NoteID, userID string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM notes WHERE id = ? AND user_id = ?`,
-		noteID, userID,
+		NoteID, userID,
 	)
 	return err
 }
