@@ -1,5 +1,6 @@
 package main
 
+//Пакет main запускает структуру приложения. Main может подтягивает что угодно.
 import (
 	"fmt"
 	"log"
@@ -21,11 +22,11 @@ func main() {
 
 	handler := transport.NewHandler(service)
 
-	//1.2, 2.4
+	//1.2, 2.4 Поинты согласно инструкци
 	http.HandleFunc("/api/auth/register", handler.RegisterHandler)
 	http.HandleFunc("/api/auth/login", handler.LoginHandler)
 	http.HandleFunc("/api/auth/logout", handler.LogoutHandler)
-	//2.1
+	//2.1 Поинты для только авторизиваных
 	http.HandleFunc("/api/notes", handler.AuthMiddleware(handler.GetNotesHandler))
 	http.HandleFunc("/api/notes/create", handler.AuthMiddleware(handler.CreateNoteHandler))
 
@@ -41,7 +42,7 @@ func main() {
 			transport.WriteError(w, http.StatusMethodNotAllowed, "Метод запрещен")
 		}
 	})
-
+	//Краткая инструкция
 	// Корень: иначе GET / даёт 404 (остальные маршруты только под /api/...).
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -63,7 +64,7 @@ func main() {
 </body></html>`)
 	})
 
-	//3.0
+	//3.0 Тест CURL
 	fmt.Println("Сервер запущен http://localhost:8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Ошибка сервера: %v", err)

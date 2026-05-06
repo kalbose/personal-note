@@ -1,5 +1,6 @@
 package application
 
+//Пакет application подтягивает пакеты database, model.
 import (
 	"errors"
 	"fmt"
@@ -27,7 +28,8 @@ type Service interface {
 }
 
 type AuthService struct {
-	repo      database.Repository
+	repo database.Repository
+	//Секретный ключ
 	jwtSecret []byte
 }
 
@@ -38,7 +40,7 @@ func NewService(repo database.Repository, jwtSecret string) *AuthService {
 	}
 }
 
-// 1.3
+// 1.3 хранение пароля в hash
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
@@ -48,7 +50,7 @@ func checkPassword(hashed, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
 }
 
-// 1.2
+// 1.2 Создания токена для пользователя
 func (s *AuthService) generateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
@@ -77,7 +79,7 @@ func (s *AuthService) validateToken(tokenStr string) (string, error) {
 	return userID, nil
 }
 
-// 1.5
+// 1.5 Проверка полей пользователя (Валидация)
 func validateRegister(req model.RegisterRequest) error {
 	if req.Login == "" {
 		return errors.New("Логин не может быть пустым")
@@ -85,7 +87,7 @@ func validateRegister(req model.RegisterRequest) error {
 	if len(req.Password) < 6 {
 		return errors.New("Пароль не может содержать меньше 6 знаков")
 	}
-
+	//Пароль содержит a-z A-Z 0-9
 	hasUpper := false
 	hasLower := false
 	hasDigit := false
@@ -109,7 +111,7 @@ func validateRegister(req model.RegisterRequest) error {
 	return nil
 }
 
-// 2.3
+// 2.3 Правило валидации 32 для заголовка 256 для заметки
 func validateNote(title, content string) error {
 	if len(title) > 32 {
 		return errors.New("Заголовок не должен быть больше 32 символов")
@@ -120,7 +122,7 @@ func validateNote(title, content string) error {
 	return nil
 }
 
-// 1.4
+// 1.4 регистрация по api
 func (s *AuthService) Register(req model.RegisterRequest) error {
 	if err := validateRegister(req); err != nil {
 		return err
@@ -132,12 +134,12 @@ func (s *AuthService) Register(req model.RegisterRequest) error {
 	if existing != nil {
 		return fmt.Errorf("Логин уже существует")
 	}
-	//1.3
+	//1.3 Хеширование пароля
 	hashedPwd, err := hashPassword(req.Password)
 	if err != nil {
 		return fmt.Errorf("Не удалось хешировать пароль: %w", err)
 	}
-
+	//создание пользователя
 	user := &model.User{
 		ID:       fmt.Sprintf("user_%d", time.Now().UnixNano()),
 		Login:    req.Login,
@@ -147,7 +149,7 @@ func (s *AuthService) Register(req model.RegisterRequest) error {
 	return s.repo.CreateUser(user)
 }
 
-// 1.1 , 1.2
+// 1.1 , 1.2 Реализация метода вход по логину паролю и авторизация через ключ
 func (s *AuthService) Login(req model.LoginRequest) (string, error) {
 	user, err := s.repo.GetUserByLogin(req.Login)
 	if err != nil {
@@ -163,13 +165,13 @@ func (s *AuthService) Login(req model.LoginRequest) (string, error) {
 	return s.generateToken(user.ID)
 }
 
-// 1.6
+// 1.6 выход
 func (s *AuthService) Logout(token string) error {
 	_, err := s.validateToken(token)
 	return err
 }
 
-// 2.0 , 2.1
+// 2.0 , 2.1 Создание заметки только для авторизиваных пользователей.
 func (s *AuthService) CreateNote(userID, title, content string) (*model.Note, error) {
 	if err := validateNote(title, content); err != nil {
 		return nil, err
@@ -191,7 +193,7 @@ func (s *AuthService) CreateNote(userID, title, content string) (*model.Note, er
 	return note, nil
 }
 
-// 2.4
+// 2.4 Взять заметки на 1 страницу
 func (s *AuthService) GetNotes(userID string, page int) ([]model.Note, error) {
 	if page < 1 {
 		page = 1
@@ -199,7 +201,7 @@ func (s *AuthService) GetNotes(userID string, page int) ([]model.Note, error) {
 	return s.repo.GetNotesByUserID(userID, page)
 }
 
-// 2.2
+// 2.2 Проверка что пользователю принадлежит заметка
 func (s *AuthService) GetNote(userID, noteID string) (*model.Note, error) {
 	note, err := s.repo.GetNoteByID(noteID, userID)
 	if err != nil {
@@ -211,6 +213,7 @@ func (s *AuthService) GetNote(userID, noteID string) (*model.Note, error) {
 	return note, nil
 }
 
+// обновление заметки
 func (s *AuthService) UpdateNote(userID, noteID, title, content string) error {
 	if err := validateNote(title, content); err != nil {
 		return err
@@ -233,6 +236,7 @@ func (s *AuthService) UpdateNote(userID, noteID, title, content string) error {
 	return s.repo.UpdateNote(updated)
 }
 
+// удаление заметки
 func (s *AuthService) DeleteNote(userID, noteID string) error {
 	return s.repo.DeleteNote(noteID, userID)
 }
