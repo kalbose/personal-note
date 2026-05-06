@@ -1,5 +1,6 @@
 package transport
 
+//пакет transport притягивает application and model.
 import (
 	"context"
 	"encoding/json"
@@ -18,6 +19,7 @@ func NewHandler(svc application.Service) *Handler {
 	return &Handler{service: svc}
 }
 
+// отправления json
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -26,6 +28,7 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	}
 }
 
+// отправки ошибки
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
 }
@@ -34,6 +37,8 @@ func WriteError(w http.ResponseWriter, status int, message string) {
 	writeError(w, status, message)
 }
 
+// извлекает  токен в данной функции была ошибка сам решить не смог воспользовался AI. Ошибка возврошала другой токен.
+// ai наладил структуру Ошибки уже сам прописывал.
 func getTokenFromHeader(r *http.Request) string {
 	auth := r.Header.Get("Authorization")
 	if auth != "" {
@@ -119,7 +124,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"Токен": token})
 }
 
-// 1.6
+// 1.6 условие
 func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Метод запрещен")
@@ -135,7 +140,7 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Выход из системы"})
 }
 
-// 2.0, 2.1, 2.4
+// 2.0, 2.1, 2.4 условия
 func (h *Handler) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Метод запрещен")
@@ -163,7 +168,7 @@ func (h *Handler) CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, note)
 }
 
-// 2.4
+// 2.4 Условия
 func (h *Handler) GetNotesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Метод запрещен")

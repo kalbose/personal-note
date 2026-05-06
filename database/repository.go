@@ -1,5 +1,6 @@
 package database
 
+//database - подтягивает тока model
 import (
 	"database/sql"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// Интерфейс для работы с дапнными
+// Интерфейс для работы с дапнными, в дальнейшем интерфейс удобно можно будет поменять на PostgreSQL.
 type Repository interface {
 	CreateUser(user *model.User) error
 	GetUserByLogin(login string) (*model.User, error)
@@ -28,13 +29,13 @@ type SQLiteRepository struct {
 	db *sql.DB
 }
 
-// 3.1
+// 3.1 выбрал бд sqlite
 func NewRepository(dbpath string) (*SQLiteRepository, error) {
 	db, err := sql.Open("sqlite", dbpath)
 	if err != nil {
 		return nil, fmt.Errorf("Ошибка открытия БД: %w", err)
 	}
-	//1.3
+	//1.3 создаеми таблицу, если ее нет хранимый в кэш
 	err = createTablet(db)
 	if err != nil {
 		return nil, fmt.Errorf("Ошибка создания БД: %w", err)
@@ -56,7 +57,7 @@ func createTablet(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	//2.2
+	//2.2 задаем фильтр по user_id
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS notes (
 		id TEXT PRIMARY KEY,
@@ -116,7 +117,7 @@ func (r *SQLiteRepository) CreateNote(note *model.Note) error {
 }
 
 func (r *SQLiteRepository) GetNotesByUserID(userID string, page int) ([]model.Note, error) {
-	//2.4
+	//2.4 задается метод пагинации 25 заметок на 1 страницу.
 	offset := (page - 1) * 25
 	limit := 25
 
@@ -146,7 +147,7 @@ func (r *SQLiteRepository) GetNotesByUserID(userID string, page int) ([]model.No
 }
 
 func (r *SQLiteRepository) GetNoteByID(noteID, userID string) (*model.Note, error) {
-	//2.2
+	//2.2 проверка метод "дейстивтельно ли заметка принадлежит пользователю"
 	note := &model.Note{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, title, content, created_at, updated_at
@@ -160,6 +161,7 @@ func (r *SQLiteRepository) GetNoteByID(noteID, userID string) (*model.Note, erro
 	return note, err
 }
 
+// Если заметка принадлежит пользователю. Значит обновляем
 func (r *SQLiteRepository) UpdateNote(note *model.Note) error {
 	_, err := r.db.Exec(
 		`UPDATE notes
@@ -170,6 +172,7 @@ func (r *SQLiteRepository) UpdateNote(note *model.Note) error {
 	return err
 }
 
+// удаление заметки
 func (r *SQLiteRepository) DeleteNote(NoteID, userID string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM notes WHERE id = ? AND user_id = ?`,
